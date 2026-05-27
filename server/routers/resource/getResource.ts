@@ -43,9 +43,10 @@ async function query(resourceId?: number, niceId?: string, orgId?: string) {
 
 export type GetResourceResponse = Omit<
     NonNullable<Awaited<ReturnType<typeof query>>>,
-    "headers"
+    "requestHeaders" | "responseHeaders"
 > & {
-    headers: { name: string; value: string }[] | null;
+    requestHeaders: { name: string; value: string }[] | null;
+    responseHeaders: { name: string; value: string }[] | null;
 };
 
 registry.registerPath({
