@@ -24,7 +24,10 @@ import {
 import { registry } from "@server/openApi";
 import { OpenAPITags } from "@server/openApi";
 import { createCertificate } from "#dynamic/routers/certificates/createCertificate";
-import { validateAndConstructDomain, checkWildcardDomainConflict } from "@server/lib/domainUtils";
+import {
+    validateAndConstructDomain,
+    checkWildcardDomainConflict
+} from "@server/lib/domainUtils";
 import { build } from "@server/build";
 import { isLicensedOrSubscribed } from "#dynamic/lib/isLicencedOrSubscribed";
 import { tierMatrix } from "@server/lib/billing/tierMatrix";
@@ -58,6 +61,10 @@ const updateHttpResourceBodySchema = z
         tlsServerName: z.string().nullable().optional(),
         setHostHeader: z.string().nullable().optional(),
         skipToIdpId: z.int().positive().nullable().optional(),
+        headers: z
+            .array(z.strictObject({ name: z.string(), value: z.string() }))
+            .nullable()
+            .optional(), // deprecated alias for requestHeaders
         requestHeaders: z
             .array(z.strictObject({ name: z.string(), value: z.string() }))
             .nullable()
@@ -117,6 +124,7 @@ const updateHttpResourceBodySchema = z
         (data) => {
             const validHeaderName = /^[a-zA-Z0-9!#$%&'*+\-.^_`|~]+$/;
             const allHeaders = [
+                ...(data.headers ?? []),
                 ...(data.requestHeaders ?? []),
                 ...(data.responseHeaders ?? [])
             ];
@@ -130,6 +138,7 @@ const updateHttpResourceBodySchema = z
         (data) => {
             const validHeaderValue = /^[\t\x20-\x7E]*$/;
             const allHeaders = [
+                ...(data.headers ?? []),
                 ...(data.requestHeaders ?? []),
                 ...(data.responseHeaders ?? [])
             ];
@@ -143,6 +152,7 @@ const updateHttpResourceBodySchema = z
         (data) => {
             const templatePattern = /\{\{[^}]+\}\}/;
             const allHeaders = [
+                ...(data.headers ?? []),
                 ...(data.requestHeaders ?? []),
                 ...(data.responseHeaders ?? [])
             ];
@@ -470,10 +480,18 @@ async function updateHttpResource(
     }
 
     let requestHeaders = undefined;
-    if (updateData.requestHeaders) {
-        requestHeaders = JSON.stringify(updateData.requestHeaders);
-    } else if (updateData.requestHeaders === null) {
-        requestHeaders = null;
+    const mergedRequestHeaders = [
+        ...(updateData.headers ?? []),
+        ...(updateData.requestHeaders ?? [])
+    ];
+    if (
+        updateData.headers !== undefined ||
+        updateData.requestHeaders !== undefined
+    ) {
+        requestHeaders =
+            mergedRequestHeaders.length > 0
+                ? JSON.stringify(mergedRequestHeaders)
+                : null;
     }
 
     let responseHeaders = undefined;
