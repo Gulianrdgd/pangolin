@@ -210,8 +210,16 @@ export async function updateProxyResources(
                 ? true
                 : resourceData.ssl;
         let headers = "";
-        if (resourceData.headers) {
-            headers = JSON.stringify(resourceData.headers);
+        const requestHeadersData = [
+            ...(resourceData.headers ?? []),
+            ...(resourceData.requestHeaders ?? [])
+        ];
+        if (requestHeadersData.length > 0) {
+            headers = JSON.stringify(requestHeadersData);
+        }
+        let responseHeaders = "";
+        if (resourceData.responseHeaders) {
+            responseHeaders = JSON.stringify(resourceData.responseHeaders);
         }
 
         if (existingResource) {
@@ -265,7 +273,8 @@ export async function updateProxyResources(
                         ]
                             ? resourceData.auth["whitelist-users"].length > 0
                             : false,
-                        headers: headers || null,
+                        requestHeaders: headers || null,
+                        responseHeaders: responseHeaders || null,
                         applyRules:
                             resourceData.rules && resourceData.rules.length > 0,
                         maintenanceModeEnabled:
@@ -724,7 +733,8 @@ export async function updateProxyResources(
                     setHostHeader: resourceData["host-header"] || null,
                     tlsServerName: resourceData["tls-server-name"] || null,
                     ssl: resourceSsl,
-                    headers: headers || null,
+                    requestHeaders: headers || null,
+                    responseHeaders: responseHeaders || null,
                     applyRules:
                         resourceData.rules && resourceData.rules.length > 0,
                     maintenanceModeEnabled: resourceData.maintenance?.enabled,
