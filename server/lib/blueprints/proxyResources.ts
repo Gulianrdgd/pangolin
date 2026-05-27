@@ -209,18 +209,17 @@ export async function updateProxyResources(
             resourceData.ssl == undefined || resourceData.ssl == null
                 ? true
                 : resourceData.ssl;
-        let headers = "";
         const requestHeadersData = [
             ...(resourceData.headers ?? []),
             ...(resourceData.requestHeaders ?? [])
         ];
-        if (requestHeadersData.length > 0) {
-            headers = JSON.stringify(requestHeadersData);
-        }
-        let responseHeaders = "";
-        if (resourceData.responseHeaders) {
-            responseHeaders = JSON.stringify(resourceData.responseHeaders);
-        }
+        const requestHeadersJson =
+            requestHeadersData.length > 0
+                ? JSON.stringify(requestHeadersData)
+                : null;
+        const responseHeadersJson = resourceData.responseHeaders
+            ? JSON.stringify(resourceData.responseHeaders)
+            : null;
 
         if (existingResource) {
             let domain;
@@ -273,8 +272,8 @@ export async function updateProxyResources(
                         ]
                             ? resourceData.auth["whitelist-users"].length > 0
                             : false,
-                        requestHeaders: headers || null,
-                        responseHeaders: responseHeaders || null,
+                        requestHeaders: requestHeadersJson,
+                        responseHeaders: responseHeadersJson,
                         applyRules:
                             resourceData.rules && resourceData.rules.length > 0,
                         maintenanceModeEnabled:
@@ -733,8 +732,8 @@ export async function updateProxyResources(
                     setHostHeader: resourceData["host-header"] || null,
                     tlsServerName: resourceData["tls-server-name"] || null,
                     ssl: resourceSsl,
-                    requestHeaders: headers || null,
-                    responseHeaders: responseHeaders || null,
+                    requestHeaders: requestHeadersJson,
+                    responseHeaders: responseHeadersJson,
                     applyRules:
                         resourceData.rules && resourceData.rules.length > 0,
                     maintenanceModeEnabled: resourceData.maintenance?.enabled,
