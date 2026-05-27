@@ -105,9 +105,12 @@ export async function getResource(
         return response<GetResourceResponse>(res, {
             data: {
                 ...resource,
-                headers: resource.headers
-                    ? JSON.parse(resource.headers)
-                    : resource.headers
+                requestHeaders: resource.requestHeaders
+                    ? JSON.parse(resource.requestHeaders)
+                    : resource.requestHeaders,
+                responseHeaders: resource.responseHeaders
+                    ? JSON.parse(resource.responseHeaders)
+                    : resource.responseHeaders
             },
             success: true,
             error: false,
