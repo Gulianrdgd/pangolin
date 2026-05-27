@@ -58,7 +58,11 @@ const updateHttpResourceBodySchema = z
         tlsServerName: z.string().nullable().optional(),
         setHostHeader: z.string().nullable().optional(),
         skipToIdpId: z.int().positive().nullable().optional(),
-        headers: z
+        requestHeaders: z
+            .array(z.strictObject({ name: z.string(), value: z.string() }))
+            .nullable()
+            .optional(),
+        responseHeaders: z
             .array(z.strictObject({ name: z.string(), value: z.string() }))
             .nullable()
             .optional(),
@@ -111,12 +115,12 @@ const updateHttpResourceBodySchema = z
     )
     .refine(
         (data) => {
-            if (data.headers) {
-                // HTTP header names must be valid token characters (RFC 7230)
-                const validHeaderName = /^[a-zA-Z0-9!#$%&'*+\-.^_`|~]+$/;
-                return data.headers.every((h) => validHeaderName.test(h.name));
-            }
-            return true;
+            const validHeaderName = /^[a-zA-Z0-9!#$%&'*+\-.^_`|~]+$/;
+            const allHeaders = [
+                ...(data.requestHeaders ?? []),
+                ...(data.responseHeaders ?? [])
+            ];
+            return allHeaders.every((h) => validHeaderName.test(h.name));
         },
         {
             error: "Header names may only contain valid HTTP token characters (letters, digits, and !#$%&'*+-.^_`|~)."
@@ -124,14 +128,12 @@ const updateHttpResourceBodySchema = z
     )
     .refine(
         (data) => {
-            if (data.headers) {
-                // HTTP header values must be visible ASCII or horizontal whitespace, no control chars (RFC 7230)
-                const validHeaderValue = /^[\t\x20-\x7E]*$/;
-                return data.headers.every((h) =>
-                    validHeaderValue.test(h.value)
-                );
-            }
-            return true;
+            const validHeaderValue = /^[\t\x20-\x7E]*$/;
+            const allHeaders = [
+                ...(data.requestHeaders ?? []),
+                ...(data.responseHeaders ?? [])
+            ];
+            return allHeaders.every((h) => validHeaderValue.test(h.value));
         },
         {
             error: "Header values may only contain printable ASCII characters and horizontal whitespace."
@@ -139,16 +141,16 @@ const updateHttpResourceBodySchema = z
     )
     .refine(
         (data) => {
-            if (data.headers) {
-                // Reject Traefik template syntax {{word}} in names or values
-                const templatePattern = /\{\{[^}]+\}\}/;
-                return data.headers.every(
-                    (h) =>
-                        !templatePattern.test(h.name) &&
-                        !templatePattern.test(h.value)
-                );
-            }
-            return true;
+            const templatePattern = /\{\{[^}]+\}\}/;
+            const allHeaders = [
+                ...(data.requestHeaders ?? []),
+                ...(data.responseHeaders ?? [])
+            ];
+            return allHeaders.every(
+                (h) =>
+                    !templatePattern.test(h.name) &&
+                    !templatePattern.test(h.value)
+            );
         },
         {
             error: "Header names and values must not contain template expressions such as {{value}}."
@@ -467,11 +469,18 @@ async function updateHttpResource(
         }
     }
 
-    let headers = undefined;
-    if (updateData.headers) {
-        headers = JSON.stringify(updateData.headers);
-    } else if (updateData.headers === null) {
-        headers = null;
+    let requestHeaders = undefined;
+    if (updateData.requestHeaders) {
+        requestHeaders = JSON.stringify(updateData.requestHeaders);
+    } else if (updateData.requestHeaders === null) {
+        requestHeaders = null;
+    }
+
+    let responseHeaders = undefined;
+    if (updateData.responseHeaders) {
+        responseHeaders = JSON.stringify(updateData.responseHeaders);
+    } else if (updateData.responseHeaders === null) {
+        responseHeaders = null;
     }
 
     const isLicensed = await isLicensedOrSubscribed(
@@ -488,7 +497,7 @@ async function updateHttpResource(
 
     const updatedResource = await db
         .update(resources)
-        .set({ ...updateData, headers })
+        .set({ ...updateData, requestHeaders, responseHeaders })
         .where(eq(resources.resourceId, resource.resourceId))
         .returning();
 

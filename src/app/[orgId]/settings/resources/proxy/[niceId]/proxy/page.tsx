@@ -1097,7 +1097,10 @@ function ProxyResourceHttpForm({
                     message: t("proxyErrorInvalidHeader")
                 }
             ),
-        headers: z
+        requestHeaders: z
+            .array(z.object({ name: z.string(), value: z.string() }))
+            .nullable(),
+        responseHeaders: z
             .array(z.object({ name: z.string(), value: z.string() }))
             .nullable(),
         proxyProtocol: z.boolean().optional(),
@@ -1108,7 +1111,8 @@ function ProxyResourceHttpForm({
         resolver: zodResolver(proxySettingsSchema),
         defaultValues: {
             setHostHeader: resource.setHostHeader || "",
-            headers: resource.headers,
+            requestHeaders: resource.requestHeaders,
+            responseHeaders: resource.responseHeaders,
             proxyProtocol: resource.proxyProtocol || false,
             proxyProtocolVersion: resource.proxyProtocolVersion || 1
         }
@@ -1148,7 +1152,8 @@ function ProxyResourceHttpForm({
                 ssl: tlsData.ssl,
                 tlsServerName: tlsData.tlsServerName || null,
                 setHostHeader: proxyData.setHostHeader || null,
-                headers: proxyData.headers || null
+                requestHeaders: proxyData.requestHeaders || null,
+                responseHeaders: proxyData.responseHeaders || null
             };
 
             // Single API call to update all settings
@@ -1161,7 +1166,8 @@ function ProxyResourceHttpForm({
                 ssl: tlsData.ssl,
                 tlsServerName: tlsData.tlsServerName || null,
                 setHostHeader: proxyData.setHostHeader || null,
-                headers: proxyData.headers || null
+                requestHeaders: proxyData.requestHeaders || null,
+                responseHeaders: proxyData.responseHeaders || null
             });
 
             toast({
@@ -1307,11 +1313,11 @@ function ProxyResourceHttpForm({
                             />
                             <FormField
                                 control={proxySettingsForm.control}
-                                name="headers"
+                                name="requestHeaders"
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>
-                                            {t("customHeaders")}
+                                            {t("customRequestHeaders")}
                                         </FormLabel>
                                         <FormControl>
                                             <HeadersInput
@@ -1323,7 +1329,31 @@ function ProxyResourceHttpForm({
                                             />
                                         </FormControl>
                                         <FormDescription>
-                                            {t("customHeadersDescription")}
+                                            {t("customRequestHeadersDescription")}
+                                        </FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={proxySettingsForm.control}
+                                name="responseHeaders"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>
+                                            {t("customResponseHeaders")}
+                                        </FormLabel>
+                                        <FormControl>
+                                            <HeadersInput
+                                                value={field.value}
+                                                onChange={(value) => {
+                                                    field.onChange(value);
+                                                }}
+                                                rows={4}
+                                            />
+                                        </FormControl>
+                                        <FormDescription>
+                                            {t("customResponseHeadersDescription")}
                                         </FormDescription>
                                         <FormMessage />
                                     </FormItem>
@@ -1369,7 +1399,7 @@ function ProxyResourceProtocolForm({
                     message: t("proxyErrorInvalidHeader")
                 }
             ),
-        headers: z
+        requestHeaders: z
             .array(z.object({ name: z.string(), value: z.string() }))
             .nullable(),
         proxyProtocol: z.boolean().optional(),
@@ -1380,7 +1410,7 @@ function ProxyResourceProtocolForm({
         resolver: zodResolver(proxySettingsSchema),
         defaultValues: {
             setHostHeader: resource.setHostHeader || "",
-            headers: resource.headers,
+            requestHeaders: resource.requestHeaders,
             proxyProtocol: resource.proxyProtocol || false,
             proxyProtocolVersion: resource.proxyProtocolVersion || 1
         }
